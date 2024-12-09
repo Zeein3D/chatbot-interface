@@ -7,10 +7,14 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const API_KEY = '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';
+const API_KEY = process.env.OPENAI_API_KEY; // Use environment variable for security
 
 app.post('/api/chat', async (req, res) => {
     const { message } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+    }
 
     try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -25,10 +29,16 @@ app.post('/api/chat', async (req, res) => {
             })
         });
 
+        if (!response.ok) {
+            const errorData = await response.json();
+            return res.status(response.status).json({ error: errorData });
+        }
+
         const data = await response.json();
         res.json(data);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch AI response' });
+        console.error('Error fetching AI response:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
